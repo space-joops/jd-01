@@ -51,6 +51,7 @@ import {
   playStart,
   updateThrustSound,
 } from "../lib/pilot-sound";
+import { EVOLVE_AT, recordRun } from "../lib/progress";
 
 type Phase = "title" | "playing" | "over";
 
@@ -63,9 +64,6 @@ const DIFF = {
   spawnBase: 0.5, // 스폰 간격 기준(초) — ±30% 지터
   driftGrace: 4.5, // 연료 0 이후 표류 유예(초)
 };
-
-/** 진화 kg 임계 [2단계, 3단계] — 낮춰서 한 판에 도달 가능하게 */
-const EVOLVE_AT = [45, 110];
 
 /** 손맛 튜닝 — 전체화면(CSS px) 기준 */
 const TUNE = {
@@ -323,6 +321,7 @@ export default function JoopsGame() {
     const fxs: Fx[] = [];
     const flybys: Flyby[] = []; // 배경 위성 (장식)
     let flybyTimer = 0.8;
+    const kindsSeen = new Set<Kind>(); // 이번 판에 만난 잔해 종류 (인벤토리 도감용)
 
     try {
       best = Number(localStorage.getItem(BEST_KEY)) || 0;
@@ -373,6 +372,7 @@ export default function JoopsGame() {
       junks.length = 0;
       popups.length = 0;
       fxs.length = 0;
+      kindsSeen.clear();
       playStart();
       pushUi();
     };
@@ -388,6 +388,8 @@ export default function JoopsGame() {
           localStorage.setItem(BEST_KEY, String(best));
         } catch {}
       }
+      // 누적 통계(인벤토리·진화 허브용) 저장
+      recordRun({ kg: kgCollected, stage, kinds: [...kindsSeen] });
       playEnd();
       pushUi();
     };
@@ -400,6 +402,7 @@ export default function JoopsGame() {
       kgCollected += j.kg;
       eaten += 1;
       ateFlash = 0.25;
+      kindsSeen.add(j.kind);
       popup(
         Math.random() < 0.5 ? `+${Math.round(j.kg)}kg` : pick(EAT_WORDS),
         j.x,
@@ -438,6 +441,7 @@ export default function JoopsGame() {
       emptyAt = null;
       popup(revived ? "재점화!" : `연료 +${DIFF.fuelRefill}`, j.x, j.y - 10, "#66fcf1");
       spawnFx(FX.heart, pet.x, pet.y - petR * 0.3, 30, { life: 0.6, grow: 1.2, rise: 26 });
+      kindsSeen.add("fuel");
       playFuelUp();
     };
 
@@ -448,6 +452,7 @@ export default function JoopsGame() {
       fuel = Math.max(0, fuel - DIFF.hazardDamage);
       popup(`아야! 연료 -${DIFF.hazardDamage}`, pet.x, pet.y - petR - 10, "#ff8080");
       spawnFx(FX.alert, j.x, j.y, 40, { life: 0.45, grow: 0.8 });
+      kindsSeen.add("hazard");
       const idx = junks.indexOf(j);
       if (idx >= 0) junks.splice(idx, 1);
       playHit();
