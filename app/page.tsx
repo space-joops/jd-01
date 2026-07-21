@@ -58,6 +58,12 @@ export default function Home() {
           >
             <span aria-hidden="true">▶</span> 출격!
           </Link>
+          <Link
+            href="/track"
+            className="mt-1 inline-flex items-center gap-2 text-lg text-[#8ecbff] underline underline-offset-4 hover:opacity-80"
+          >
+            🛰️ 궤도 관제 — 냠냠샛 지금 어디?
+          </Link>
         </section>
 
         {/* 기지 대시보드 — 인벤토리 · 진화 · 완전체 모습 */}
